@@ -1,0 +1,5 @@
+# CSV bruto do MAPA (~390 MB): nunca versionar (limite de 100 MB por arquivo no GitHub)
+*.csv
+*.tmp
+__pycache__/
+.venv/

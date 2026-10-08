@@ -1,0 +1,70 @@
+name: Atualizar Agrofit
+
+# Roda nos dias 1 a 4 de cada mes. O script pula sozinho (--so-se-mes-pendente)
+# quando o mes ja foi verificado com sucesso; ou seja, na pratica:
+#   dia 1 funcionou  -> dias 2, 3 e 4 nao fazem nada;
+#   dia 1 falhou     -> tenta de novo no dia 2, depois 3 e por fim 4.
+# Falhas dos dias 1 a 3 viram apenas aviso; so a do dia 4 deixa o workflow
+# vermelho (e dispara e-mail do GitHub). O Parquet anterior nunca e apagado.
+on:
+  schedule:
+    - cron: '0 9 1-4 * *' # 09:00 UTC = 06:00 em Brasilia
+  workflow_dispatch:
+    inputs:
+      forcar:
+        description: 'Aceitar queda grande no numero de produtos'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # o workflow grava o commit com o Parquet atualizado
+
+concurrency:
+  group: agrofit
+  cancel-in-progress: false
+
+jobs:
+  atualiza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Testes do atualizador
+        run: python -m unittest discover -s tests
+
+      - name: Baixar o CSV e gerar o Parquet
+        env:
+          # Variable do repositorio (Settings > Secrets and variables > Actions > Variables).
+          # Vazia = usa o link padrao do script.
+          AGROFIT_CSV_URL: ${{ vars.AGROFIT_CSV_URL }}
+          EVENTO: ${{ github.event_name }}
+          FORCAR: ${{ inputs.forcar }}
+        run: |
+          ARGS=""
+          if [ "$EVENTO" = "schedule" ]; then
+            ARGS="--so-se-mes-pendente"
+            # dias 1-3: falha vira aviso (tenta de novo amanha); dia 4: falha de verdade
+            if [ "$(date -u +%-d)" -lt 4 ]; then ARGS="$ARGS --tolerar-falha"; fi
+          fi
+          if [ "$FORCAR" = "true" ]; then ARGS="$ARGS --forcar"; fi
+          python scripts/atualiza_agrofit.py $ARGS
+
+      - name: Publicar (commit) se algo mudou
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add agrofit/
+          if git diff --cached --quiet; then
+            echo "Sem alteracoes para publicar."
+          else
+            git commit -m "dados(agrofit): atualizacao de $(date -u +%F)"
+            git push
+          fi

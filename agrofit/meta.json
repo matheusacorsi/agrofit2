@@ -1,0 +1,10 @@
+{
+  "schema_versao": 1,
+  "atualizado_em": "2026-09-19T12:27:32+00:00",
+  "verificado_em": null,
+  "produtos": 4403,
+  "linhas_no_csv_original": 279707,
+  "fonte": "https://dados.agricultura.gov.br/dataset/sistema-de-agrotoxicos-fitossanitarios-agrofit",
+  "url_csv": "https://dados.agricultura.gov.br/dataset/6c913699-e82e-4da3-a0a1-fb6c431e367f/resource/d30b30d7-e256-484e-9ab8-cd40974e1238/download/agrofitprodutosformulados.csv",
+  "hash_conteudo": "1aabd25799b4657571ee7be6f6cafd6d00b6013b6c1bef36a255192c8fab4896"
+}
